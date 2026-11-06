@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Panel de Resultados – 9° Feria Talento Emprendedor</title>
+  <script src="tailwind.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body class="admin-bg text-gray-100 min-h-screen flex flex-col items-center justify-center">
+
+  <section id="login-panel" class="glass-container max-w-md w-full mx-4">
+    <h1 class="text-3xl font-bold text-center mb-6 text-white">Acceso administrativo</h1>
+    <input id="admin-email" type="email" autocomplete="username" placeholder="Correo del administrador" class="w-full p-3 rounded bg-gray-800 border border-gray-700 text-white mb-3" />
+    <input id="admin-password" type="password" autocomplete="current-password" placeholder="Contraseña" class="w-full p-3 rounded bg-gray-800 border border-gray-700 text-white mb-3" />
+    <button id="login-btn" class="btn w-full">Entrar</button>
+    <p id="login-error" class="text-red-400 mt-4 hidden"></p>
+    <div class="text-center mt-6"><a href="index.html" class="text-blue-300 hover:text-blue-200">Regresar a votación</a></div>
+  </section>
+
+  <main id="admin-panel" class="hidden container mx-auto p-6 fade-in w-full">
+    <section class="glass-container max-w-5xl mx-auto">
+      <div class="flex flex-wrap justify-between items-center gap-3 mb-8">
+        <h2 class="text-3xl font-semibold text-white">RESULTADOS</h2>
+        <div class="flex flex-wrap gap-2">
+          <a href="categorias.html" class="btn">Categorías</a>
+          <button id="export-btn" class="btn bg-green-600">Exportar CSV</button>
+          <button id="logout-btn" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded">Cerrar sesión</button>
+        </div>
+      </div>
+
+      <div class="grid md:grid-cols-3 gap-4 mb-8">
+        <div class="p-4 rounded-lg bg-gray-900 bg-opacity-60 border border-gray-700"><div class="text-gray-400">Votos registrados</div><div id="total-votes" class="text-3xl font-bold text-white">0</div></div>
+        <div class="p-4 rounded-lg bg-gray-900 bg-opacity-60 border border-gray-700"><div class="text-gray-400">Códigos registrados</div><div id="total-voters" class="text-3xl font-bold text-white">0</div></div>
+        <div class="p-4 rounded-lg bg-gray-900 bg-opacity-60 border border-gray-700"><div class="text-gray-400">Códigos utilizados</div><div id="used-voters" class="text-3xl font-bold text-white">0</div></div>
+      </div>
+
+      <div id="results" class="space-y-6"></div>
+
+      <section class="mt-10 p-5 rounded-lg bg-gray-900 bg-opacity-50 border border-gray-700">
+        <h3 class="text-xl font-semibold mb-3">Códigos de votación</h3>
+        <p class="text-gray-400 text-sm mb-3">Puedes pegar un código por línea. También puedes generar códigos automáticamente.</p>
+        <div class="flex flex-wrap gap-2 mb-3">
+          <input id="code-count" type="number" min="1" max="5000" value="100" class="p-2 rounded bg-gray-800 border border-gray-700 w-32" />
+          <button id="generate-codes" class="btn">Generar códigos</button>
+        </div>
+        <textarea id="voter-codes" rows="6" class="w-full p-3 rounded bg-gray-800 border border-gray-700 text-white" placeholder="A7K9P2\nB4M8X1\nC9Q3L7"></textarea>
+        <div class="mt-3 flex flex-wrap gap-2">
+          <button id="save-codes" class="btn bg-blue-600">Guardar códigos</button>
+          <button id="download-codes" class="btn bg-gray-700">Descargar códigos</button>
+        </div>
+        <p id="codes-status" class="text-green-300 mt-3"></p>
+      </section>
+
+      <section class="mt-10 text-center">
+        <button id="resetVotesBtn" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white font-semibold rounded shadow transition">🔄 Reiniciar Votos</button>
+      </section>
+    </section>
+  </main>
+
+  <div id="reset-modal" class="fixed inset-0 bg-gray-900 bg-opacity-70 hidden justify-center items-center z-[9999]">
+    <div class="glass-container p-6 rounded-xl max-w-md mx-auto text-center backdrop-blur-md bg-gray-800 bg-opacity-60 border border-gray-700 shadow-lg">
+      <h2 class="text-2xl font-semibold text-white mb-4">¿Borrar todos los votos?</h2>
+      <p class="text-gray-300 mb-6">Se eliminarán los votos y todos los códigos volverán a estar disponibles. Las categorías y proyectos permanecerán intactos.</p>
+      <div class="flex justify-center gap-4"><button id="confirmReset" class="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded">Sí, borrar</button><button id="cancelReset" class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded">Cancelar</button></div>
+    </div>
+  </div>
+
+<script type="module">
+  import {
+    auth, db, onAuthStateChanged, signInWithEmailAndPassword, signOut, isAdmin,
+    getCategoriesWithProjects, getVotes, resetVotes, createVoters,
+    collection, getDocs, escapeHtml
+  } from './firebase.js';
+
+  const loginPanel = document.getElementById('login-panel');
+  const adminPanel = document.getElementById('admin-panel');
+  const loginError = document.getElementById('login-error');
+  const results = document.getElementById('results');
+
+  onAuthStateChanged(auth, async (user) => {
+    if (user && await isAdmin(user)) {
+      loginPanel.classList.add('hidden');
+      adminPanel.classList.remove('hidden');
+      await loadResults();
+      await loadVoterStats();
+    } else {
+      loginPanel.classList.remove('hidden');
+      adminPanel.classList.add('hidden');
+    }
+  });
+
+  document.getElementById('login-btn').addEventListener('click', async () => {
+    const email = document.getElementById('admin-email').value.trim();
+    const password = document.getElementById('admin-password').value;
+    loginError.classList.add('hidden');
+    try {
+      const credential = await signInWithEmailAndPassword(auth, email, password);
+      if (!(await isAdmin(credential.user))) {
+        await signOut(auth);
+        throw new Error('El usuario existe, pero no tiene permisos de administrador.');
+      }
+    } catch (e) {
+      loginError.textContent = e.message || 'No fue posible iniciar sesión.';
+      loginError.classList.remove('hidden');
+    }
+  });
+
+  document.getElementById('admin-password').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') document.getElementById('login-btn').click();
+  });
+
+  document.getElementById('logout-btn').addEventListener('click', () => signOut(auth));
+
+  async function loadResults() {
+    results.innerHTML = '<p class="text-gray-300">Cargando resultados...</p>';
+    try {
+      const [categories, votes] = await Promise.all([getCategoriesWithProjects(), getVotes()]);
+      const counts = {};
+
+      // Inicializar el contador de cada proyecto.
+      categories.forEach(cat => {
+        cat.projects.forEach(project => {
+          counts[`${cat.id}_${project.id}`] = 0;
+        });
+      });
+
+      // Contabilizar los votos recibidos por cada proyecto.
+      votes.forEach(vote => {
+        Object.entries(vote.selections || {}).forEach(([categoryId, projectId]) => {
+          const key = `${categoryId}_${projectId}`;
+          if (key in counts) counts[key]++;
+        });
+      });
+
+      document.getElementById('total-votes').textContent = votes.length;
+      results.innerHTML = '';
+
+      if (!categories.length) {
+        results.innerHTML = '<p class="text-center text-gray-300 text-lg">No hay categorías registradas.</p>';
+        return;
+      }
+
+      categories.forEach(cat => {
+        const section = document.createElement('div');
+        section.className = 'p-4 rounded-lg bg-gray-800 bg-opacity-60 mb-6';
+
+        const title = document.createElement('h3');
+        title.className = 'text-xl font-bold text-white mb-2';
+        title.textContent = `${cat.title} — Valor máximo: 30%`;
+
+        const note = document.createElement('p');
+        note.className = 'text-sm text-gray-400 mb-4';
+        note.textContent = 'Distribución proporcional del 30% según los votos de esta categoría.';
+
+        const list = document.createElement('ul');
+        list.className = 'space-y-2';
+
+        const categoryTotal = cat.projects.reduce(
+          (sum, project) => sum + (counts[`${cat.id}_${project.id}`] || 0),
+          0
+        );
+
+        const sorted = [...cat.projects].sort(
+          (a, b) => (counts[`${cat.id}_${b.id}`] || 0) - (counts[`${cat.id}_${a.id}`] || 0)
+        );
+
+        sorted.forEach(project => {
+          const votesCount = counts[`${cat.id}_${project.id}`] || 0;
+          const percentage = categoryTotal > 0
+            ? (votesCount / categoryTotal) * 30
+            : 0;
+
+          const li = document.createElement('li');
+          li.className = votesCount > 0 && votesCount === (counts[`${cat.id}_${sorted[0]?.id}`] || 0)
+            ? 'flex justify-between items-center p-3 bg-yellow-900 bg-opacity-40 border-2 border-yellow-400 rounded glow'
+            : 'flex justify-between items-center p-3 bg-gray-900 bg-opacity-50 rounded border border-gray-700';
+
+          const projectName = document.createElement('span');
+          projectName.className = votesCount > 0 && votesCount === (counts[`${cat.id}_${sorted[0]?.id}`] || 0)
+            ? 'font-semibold text-yellow-300'
+            : 'text-gray-100';
+          projectName.textContent = `${projectName.className.includes('yellow') ? '🏆 ' : ''}${project.title}`;
+
+          const percentageLabel = document.createElement('span');
+          percentageLabel.className = 'text-blue-400 font-bold text-lg';
+          percentageLabel.textContent = `${percentage.toFixed(2)}%`;
+
+          li.append(projectName, percentageLabel);
+          list.appendChild(li);
+        });
+
+        const totalLine = document.createElement('div');
+        totalLine.className = 'mt-4 pt-3 border-t border-gray-600 flex justify-between text-sm';
+        totalLine.innerHTML = `<span class="text-gray-400">Porcentaje distribuido en la categoría</span><strong class="text-white">${categoryTotal > 0 ? '30.00%' : '0.00%'}</strong>`;
+
+        section.append(title, note, list, totalLine);
+        results.appendChild(section);
+      });
+    } catch (e) {
+      results.innerHTML = `<p class="text-red-300">${escapeHtml(e.message)}</p>`;
+    }
+  }
+
+  async function loadVoterStats() {
+    const snapshot = await getDocs(collection(db, 'votantes'));
+    let used = 0;
+    snapshot.forEach(d => { if (d.data().used) used++; });
+    document.getElementById('total-voters').textContent = snapshot.size;
+    document.getElementById('used-voters').textContent = used;
+  }
+
+  function randomCode(length = 6) {
+    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    let code = '';
+    crypto.getRandomValues(new Uint32Array(length)).forEach(n => code += chars[n % chars.length]);
+    return code;
+  }
+
+  document.getElementById('generate-codes').addEventListener('click', () => {
+    const count = Math.min(5000, Math.max(1, Number(document.getElementById('code-count').value) || 1));
+    const codes = new Set();
+    while (codes.size < count) codes.add(randomCode());
+    document.getElementById('voter-codes').value = [...codes].join('\n');
+  });
+
+  document.getElementById('save-codes').addEventListener('click', async () => {
+    const codes = document.getElementById('voter-codes').value.split(/\r?\n/).map(x => x.trim()).filter(Boolean);
+    if (!codes.length) return alert('Ingresa o genera al menos un código.');
+    try {
+      const total = await createVoters(codes);
+      document.getElementById('codes-status').textContent = `${total} código(s) guardado(s).`;
+      await loadVoterStats();
+    } catch (e) { alert(e.message); }
+  });
+
+  document.getElementById('download-codes').addEventListener('click', () => {
+    const text = document.getElementById('voter-codes').value.trim();
+    if (!text) return alert('No hay códigos para descargar.');
+    const blob = new Blob([text + '\n'], {type: 'text/plain;charset=utf-8'});
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'codigos_votacion.txt'; a.click(); URL.revokeObjectURL(a.href);
+  });
+
+  document.getElementById('export-btn').addEventListener('click', async () => {
+    try {
+      const [categories, votes] = await Promise.all([getCategoriesWithProjects(), getVotes()]);
+      const counts = {};
+
+      categories.forEach(cat => cat.projects.forEach(project => {
+        counts[`${cat.id}_${project.id}`] = 0;
+      }));
+
+      votes.forEach(vote => {
+        Object.entries(vote.selections || {}).forEach(([categoryId, projectId]) => {
+          const key = `${categoryId}_${projectId}`;
+          if (key in counts) counts[key]++;
+        });
+      });
+
+      // El CSV incluye únicamente el porcentaje asignado a cada proyecto.
+      const rows = [['Categoría', 'Proyecto', 'Porcentaje']];
+      categories.forEach(cat => {
+        const categoryTotal = cat.projects.reduce(
+          (sum, project) => sum + (counts[`${cat.id}_${project.id}`] || 0),
+          0
+        );
+
+        cat.projects.forEach(project => {
+          const projectVotes = counts[`${cat.id}_${project.id}`] || 0;
+          const percentage = categoryTotal > 0 ? (projectVotes / categoryTotal) * 30 : 0;
+          rows.push([cat.title, project.title, `${percentage.toFixed(2)}%`]);
+        });
+      });
+
+      const csv = rows.map(row =>
+        row.map(value => `"${String(value).replaceAll('"', '""')}"`).join(',')
+      ).join('\n');
+
+      const blob = new Blob([csv], {type: 'text/csv;charset=utf-8'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = 'resultados_votacion_porcentajes.csv';
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch (error) {
+      alert(`No fue posible exportar los resultados: ${error.message}`);
+    }
+  });
+
+  const modal = document.getElementById('reset-modal');
+  document.getElementById('resetVotesBtn').addEventListener('click', () => { modal.classList.remove('hidden'); modal.classList.add('flex'); });
+  document.getElementById('cancelReset').addEventListener('click', () => { modal.classList.add('hidden'); modal.classList.remove('flex'); });
+  document.getElementById('confirmReset').addEventListener('click', async () => {
+    try {
+      await resetVotes();
+      modal.classList.add('hidden'); modal.classList.remove('flex');
+      await loadResults(); await loadVoterStats();
+      alert('Votos reiniciados correctamente.');
+    } catch (e) { alert(e.message); }
+  });
+</script>
+</body>
+</html>

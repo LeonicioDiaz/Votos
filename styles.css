@@ -1,0 +1,387 @@
+/* =====================================================
+   STYLE.CSS – Feria Talento Emprendedor
+   Tema: Startup / Evento Tecnológico
+   ===================================================== */
+
+/* Fuente moderna */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+:root {
+  --primary: #60a5fa;   /* azul */
+  --secondary: #7c3aed; /* morado */
+  --accent: #2dd4bf;    /* turquesa */
+  --bg-dark: #0b0f19;   /* fondo oscuro */
+  --glass-bg: rgba(255, 255, 255, 0.08);
+  --glass-border: rgba(255, 255, 255, 0.15);
+  --text-light: #e5e7eb;
+}
+
+/* ===== Reset ===== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Poppins', sans-serif;
+  color: var(--text-light);
+  background: var(--bg-dark);
+  overflow-x: hidden;
+  position: relative;
+}
+
+/* ===== Fondo animado tipo red tecnológica ===== */
+.network-bg {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 0;
+  background: radial-gradient(circle at center, #111827 0%, #0b0f19 100%);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.network-bg::before,
+.network-bg::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    60deg,
+    rgba(96, 165, 250, 0.1),
+    rgba(96, 165, 250, 0.1) 2px,
+    transparent 2px,
+    transparent 40px
+  );
+  animation: moveGrid 60s linear infinite;
+}
+
+.network-bg::after {
+  background: repeating-linear-gradient(
+    -60deg,
+    rgba(124, 58, 237, 0.1),
+    rgba(124, 58, 237, 0.1) 2px,
+    transparent 2px,
+    transparent 40px
+  );
+  animation-duration: 80s;
+  opacity: 0.6;
+}
+
+@keyframes moveGrid {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    /* Un valor grande para que se mueva. 
+       Esto hace que el fondo se desplace, pero como se repite, 
+       parece un bucle infinito. */
+    background-position: 400px 400px;
+  }
+}
+
+
+/* ===== Loader abstracto ===== */
+/* .loader {
+  position: fixed;
+  inset: 0;
+  background: radial-gradient(circle at center, #111827, #0b0f19);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+.spinner {
+  width: 80px;
+  height: 80px;
+  border: 6px solid transparent;
+  border-top: 6px solid var(--primary);
+  border-right: 6px solid var(--secondary);
+  border-bottom: 6px solid var(--accent);
+  border-radius: 50%;
+  animation: spin 1.2s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+} */
+
+/* ===== Encabezado ===== */
+header {
+  text-align: center;
+  padding: 3rem 1rem 2rem;
+  color: var(--text-light);
+}
+
+header h1 {
+  font-size: 2.2rem;
+  font-weight: 700;
+  background: linear-gradient(90deg, var(--primary), var(--secondary), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: 1px;
+}
+
+/* ===== Contenedores y tarjetas ===== */
+.glass-container {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  border-radius: 1rem;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 25px rgba(0,0,0,0.4);
+  padding: 2rem;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.glass-container:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 30px rgba(0,0,0,0.5);
+}
+
+/* ===== Botones ===== */
+button, .btn {
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+button:hover, .btn:hover {
+  background: linear-gradient(90deg, var(--accent), var(--secondary));
+  transform: scale(1.05);
+}
+
+/* ===== Modal de éxito ===== */
+#success-modal {
+  backdrop-filter: blur(8px);
+}
+
+/* ===== Fondo estático del admin ===== */
+.admin-bg {
+  background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+}
+
+/* ===== Animaciones suaves ===== */
+.fade-in {
+  animation: fadeIn 1.2s ease forwards;
+  opacity: 0;
+}
+
+@keyframes fadeIn {
+  to { opacity: 1; }
+}
+
+/* ===== Botón oculto para administración ===== */
+.admin-access {
+  position: fixed;
+  bottom: 1.5rem;
+  left: 1.5rem;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.admin-access:hover,
+.admin-access:has(.admin-button:hover) {
+  opacity: 1;
+}
+
+.admin-button {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  opacity: 0.85;
+  transition: all 0.3s ease;
+}
+
+.admin-button:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
+/* ===== Efecto glow para el logo ===== */
+.logo-glow {
+  filter: drop-shadow(0 0 10px rgba(96,165,250,0.6))
+          drop-shadow(0 0 20px rgba(124,58,237,0.4))
+          drop-shadow(0 0 30px rgba(45,212,191,0.3));
+  animation: logoPulse 3s ease-in-out infinite alternate;
+}
+
+@keyframes logoPulse {
+  from { filter: drop-shadow(0 0 8px rgba(96,165,250,0.4)); }
+  to { filter: drop-shadow(0 0 20px rgba(124,58,237,0.7)); }
+}
+
+main, header, .glass-container, .btn, .loader {
+  position: relative;
+  z-index: 5;
+}
+
+
+/* ===== Prioridad de capas (z-index) ===== */
+.network-bg {
+  z-index: 0;
+}
+
+main,
+header,
+.glass-container,
+.project-card,
+.btn {
+  position: relative;
+  z-index: 5;
+}
+
+/* El modal debe estar encima de todo */
+#success-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  /* Las líneas 'display', 'justify-content' y 'align-items' se eliminaron */
+  background: rgba(15, 23, 42, 0.8);
+  backdrop-filter: blur(6px);
+}
+
+#success-modal .glass-container {
+  z-index: 1001;
+}
+
+/* ===== Animaciones del modal ===== */
+.fade-in {
+  animation: fadeInModal 0.4s ease forwards;
+}
+
+.fade-out {
+  animation: fadeOutModal 0.5s ease forwards;
+}
+
+@keyframes fadeInModal {
+  from {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes fadeOutModal {
+  from {
+    opacity: 1;
+    transform: scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+}
+
+/* ===== Indicador de selección (palomita) ===== */
+.project-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.project-card.selected {
+  border: 2px solid #60a5fa !important; /* azul brillante */
+  box-shadow: 0 0 12px rgba(96, 165, 250, 0.5);
+}
+
+.project-card::after {
+  content: "✔";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) scale(0);
+  font-size: 4rem;
+  color: rgba(96, 165, 250, 0.9);
+  text-shadow: 0 0 10px rgba(96, 165, 250, 0.8);
+  opacity: 0;
+  transition: all 0.3s ease;
+  pointer-events: none;
+}
+
+.project-card.selected::after {
+  transform: translate(-50%, -50%) scale(1);
+  opacity: 1;
+}
+
+
+/* ===== Efecto para el proyecto ganador ===== */
+.glow {
+  animation: glowPulse 2.5s ease-in-out infinite;
+  box-shadow: 0 0 12px rgba(250, 204, 21, 0.6),
+              0 0 20px rgba(250, 204, 21, 0.4);
+}
+
+@keyframes glowPulse {
+  0%, 100% {
+    box-shadow: 0 0 10px rgba(250, 204, 21, 0.4),
+                0 0 25px rgba(250, 204, 21, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 18px rgba(250, 204, 21, 0.7),
+                0 0 35px rgba(250, 204, 21, 0.4);
+  }
+}
+
+
+/* Contenedor que controla la visibilidad del botón para pantalla completa */
+#fullscreen-container {
+  opacity: 0.15;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#fullscreen-container:hover {
+  opacity: 1;
+}
+
+/* Asegura que el botón aparezca con la animación */
+#fullscreen-btn {
+  display: none;
+}
+
+#fullscreen-container:hover #fullscreen-btn {
+  display: flex;
+}
+
+/* 🔧 Oculta la barra de desplazamiento pero mantiene el scroll funcional */
+
+/* Navegadores basados en WebKit (Chrome, Edge, Safari) */
+::-webkit-scrollbar {
+  width: 0px;
+  height: 0px;
+}
+
+/* Firefox */
+html {
+  scrollbar-width: none;
+}
+
+/* Safari (parte extra de seguridad visual) */
+body {
+  -ms-overflow-style: none; /* IE y Edge antiguos */
+  overflow: -moz-scrollbars-none; /* Firefox antiguos */
+}
+
+/* ocultar boton admin */
+#admin-container {
+  opacity: 0.15;
+  transition: opacity 0.3s ease-in-out;
+}
+
+#admin-container:hover {
+  opacity: 1;
+}
+
+/* Opcional: efecto de brillo al pasar el ratón */
+#admin-btn:hover {
+  box-shadow: 0 0 10px rgba(59, 130, 246, 0.8);
+}

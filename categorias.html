@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Gestión de Categorías y Proyectos</title>
+  <script src="tailwind.js"></script>
+  <link rel="stylesheet" href="styles.css" />
+  <script type="module">
+    import {
+      auth, onAuthStateChanged, signOut, isAdmin,
+      getCategoriesWithProjects, createCategory, deleteCategory,
+      createProject, deleteProject, slugifyImageName, escapeHtml
+    } from './firebase.js';
+
+    const categoriesList = document.getElementById('categories-list');
+    const loginSection = document.getElementById('login-required');
+    const panel = document.getElementById('admin-panel');
+    const status = document.getElementById('status');
+
+    onAuthStateChanged(auth, async (user) => {
+      if (!user || !(await isAdmin(user))) {
+        loginSection.classList.remove('hidden');
+        panel.classList.add('hidden');
+        return;
+      }
+      loginSection.classList.add('hidden');
+      panel.classList.remove('hidden');
+      await renderCategories();
+    });
+
+    async function renderCategories() {
+      status.textContent = 'Cargando...';
+      try {
+        const categories = await getCategoriesWithProjects();
+        categoriesList.innerHTML = '';
+        if (!categories.length) {
+          categoriesList.innerHTML = '<p class="text-gray-300">No hay categorías registradas.</p>';
+          status.textContent = '';
+          return;
+        }
+
+        categories.forEach((cat) => {
+          const catDiv = document.createElement('div');
+          catDiv.className = 'p-4 rounded-lg bg-gray-800 bg-opacity-60 border border-gray-700 shadow-md';
+          catDiv.innerHTML = `
+            <div class="flex flex-wrap justify-between items-center gap-3 mb-3">
+              <h3 class="text-xl font-semibold text-white">${escapeHtml(cat.title)}</h3>
+              <div class="space-x-2">
+                <button class="btn btn-small bg-gradient-to-r from-blue-500 to-purple-500 px-3 py-1" data-toggle="${cat.id}">Ver proyectos</button>
+                <button class="btn btn-small bg-red-600 px-3 py-1" data-delete-cat="${cat.id}">Eliminar</button>
+              </div>
+            </div>
+            <div id="projects-${cat.id}" class="hidden mt-3 pl-3 border-l border-gray-600">
+              <div class="flex flex-wrap gap-3 mb-3">
+                <input id="proj-title-${cat.id}" type="text" placeholder="Título del proyecto" class="p-2 rounded bg-gray-900 border border-gray-700 flex-1" />
+                <button class="btn bg-green-600 px-3 py-1" data-add-project="${cat.id}">Agregar Proyecto</button>
+              </div>
+              <p class="text-xs text-gray-400 mb-3">Imagen esperada: <span id="preview-name-${cat.id}">nombre_del_proyecto.png</span></p>
+              <ul id="proj-list-${cat.id}" class="space-y-2">
+                ${cat.projects.map((p) => `
+                  <li class="flex flex-wrap justify-between gap-3 bg-gray-900 bg-opacity-60 p-2 rounded items-center">
+                    <span>${escapeHtml(p.title)} <span class="text-xs text-gray-400">(${escapeHtml(p.id)})</span><br><span class="text-xs text-blue-300">${escapeHtml(p.image)}</span></span>
+                    <button class="text-red-400 hover:text-red-600" data-delete-project="${p.id}">Eliminar</button>
+                  </li>`).join('')}
+              </ul>
+            </div>`;
+          categoriesList.appendChild(catDiv);
+        });
+
+        categoriesList.querySelectorAll('[data-toggle]').forEach((btn) => {
+          btn.addEventListener('click', () => document.getElementById(`projects-${btn.dataset.toggle}`).classList.toggle('hidden'));
+        });
+        categoriesList.querySelectorAll('[data-delete-cat]').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('¿Eliminar esta categoría y todos sus proyectos?')) return;
+            try { await deleteCategory(btn.dataset.deleteCat); await renderCategories(); }
+            catch (e) { alert(e.message); }
+          });
+        });
+        categoriesList.querySelectorAll('[data-add-project]').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            const id = btn.dataset.addProject;
+            const input = document.getElementById(`proj-title-${id}`);
+            const title = input.value.trim();
+            if (!title) return alert('Ingresa un título para el proyecto.');
+            try {
+              const result = await createProject(id, title);
+              input.value = '';
+              alert(`Proyecto agregado. La imagen que debe existir es: ${result.image}`);
+              await renderCategories();
+            } catch (e) { alert(e.message); }
+          });
+        });
+        categoriesList.querySelectorAll('[data-delete-project]').forEach((btn) => {
+          btn.addEventListener('click', async () => {
+            if (!confirm('¿Eliminar este proyecto?')) return;
+            try { await deleteProject(btn.dataset.deleteProject); await renderCategories(); }
+            catch (e) { alert(e.message); }
+          });
+        });
+
+        categoriesList.querySelectorAll('input[id^="proj-title-"]').forEach((input) => {
+          input.addEventListener('input', () => {
+            const id = input.id.replace('proj-title-', '');
+            document.getElementById(`preview-name-${id}`).textContent = input.value.trim() ? slugifyImageName(input.value) : 'nombre_del_proyecto.png';
+          });
+        });
+        status.textContent = `${categories.length} categoría(s) cargada(s).`;
+      } catch (error) {
+        console.error(error);
+        status.textContent = error.message;
+      }
+    }
+
+    document.getElementById('add-category').addEventListener('click', async () => {
+      const input = document.getElementById('cat-title');
+      const title = input.value.trim();
+      if (!title) return alert('Ingresa un título para la categoría.');
+      try { await createCategory(title); input.value = ''; await renderCategories(); }
+      catch (e) { alert(e.message); }
+    });
+
+    document.getElementById('logout').addEventListener('click', async () => {
+      await signOut(auth);
+      location.href = 'admin.html';
+    });
+  </script>
+</head>
+<body class="admin-bg text-gray-100 min-h-screen flex flex-col items-center p-6">
+  <section id="login-required" class="hidden glass-container max-w-xl text-center mt-16">
+    <h1 class="text-3xl font-bold text-white mb-4">Acceso restringido</h1>
+    <p class="text-gray-300 mb-6">Debes iniciar sesión como administrador.</p>
+    <a href="admin.html" class="btn">Ir al acceso administrativo</a>
+  </section>
+
+  <main id="admin-panel" class="hidden container mx-auto glass-container fade-in max-w-5xl">
+    <div class="flex flex-wrap justify-between items-center gap-3 mb-8">
+      <h1 class="text-3xl font-bold text-white">Panel de Gestión</h1>
+      <button id="logout" class="px-4 py-2 bg-red-600 hover:bg-red-700 rounded">Cerrar sesión</button>
+    </div>
+
+    <section class="mb-8">
+      <h2 class="text-2xl font-semibold mb-4 text-white">Nueva Categoría</h2>
+      <div class="flex flex-wrap gap-4">
+        <input id="cat-title" type="text" placeholder="Título de categoría" class="p-2 rounded bg-gray-800 border border-gray-700 flex-1" />
+        <button id="add-category" class="btn">Agregar</button>
+      </div>
+    </section>
+
+    <section>
+      <div class="flex justify-between items-center mb-4"><h2 class="text-2xl font-semibold text-white">Categorías</h2><span id="status" class="text-sm text-gray-400"></span></div>
+      <div id="categories-list" class="space-y-6"></div>
+    </section>
+
+    <div class="text-center mt-10"><a href="admin.html" class="btn shadow-lg">Volver a resultados</a></div>
+  </main>
+</body>
+</html>

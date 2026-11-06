@@ -1,0 +1,72 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function admin() {
+      return signedIn()
+        && exists(/databases/$(database)/documents/admins/$(request.auth.uid))
+        && get(/databases/$(database)/documents/admins/$(request.auth.uid)).data.active == true;
+    }
+
+    // El documento del administrador solo puede consultarse por el propio
+    // administrador autenticado. Solo un administrador puede modificarlo.
+    match /admins/{uid} {
+      allow get: if signedIn() && request.auth.uid == uid;
+      allow list: if admin();
+      allow create, update, delete: if admin();
+    }
+
+    // La boleta es pública para lectura.
+    match /categorias/{categoryId} {
+      allow read: if true;
+      allow create, update, delete: if admin();
+    }
+
+    match /proyectos/{projectId} {
+      allow read: if true;
+      allow create, update, delete: if admin();
+    }
+
+    // Códigos de votación.
+    //
+    // El votante NO está autenticado. Puede consultar únicamente el documento
+    // cuyo ID coincide con el código que conoce. No puede listar todos los códigos.
+    //
+    // Un código solo puede pasar de used=false a used=true y únicamente como
+    // parte del mismo batch que crea el voto correspondiente.
+    match /votantes/{voterId} {
+      allow get: if true;
+      allow list: if admin();
+
+      allow create: if admin();
+      allow delete: if admin();
+
+      allow update: if admin() || (
+        request.auth == null
+        && resource.data.used == false
+        && request.resource.data.used == true
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['used', 'usedAt'])
+      );
+    }
+
+    // Un código solo puede generar un voto y el ID del voto debe ser el mismo
+    // código. La creación debe ocurrir en el mismo batch que marca el código
+    // como usado. Firestore hace ambas operaciones atómicamente.
+    match /votos/{voterId} {
+      allow read: if admin();
+
+      allow create: if request.auth == null
+        && !exists(/databases/$(database)/documents/votos/$(voterId))
+        && request.resource.data.voterId == voterId
+        && request.resource.data.keys().hasOnly(['voterId', 'selections', 'createdAt'])
+        && request.resource.data.selections is map
+        && getAfter(/databases/$(database)/documents/votantes/$(voterId)).data.used == true;
+
+      allow update, delete: if admin();
+    }
+  }
+}

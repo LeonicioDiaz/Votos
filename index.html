@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Leonicio</title>
+
+    <!-- Tailwind -->
+    <script src="tailwind.js"></script>
+    <!-- Lógica original -->
+    <script type="module" src="app.js"></script>
+    <!-- Estilos nuevos -->
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+
+  <body class="text-gray-200 min-h-screen flex flex-col items-center justify-center relative">
+
+    <!-- audio -->
+     <audio id="voteSound" src="sounds/success.mp3" preload="auto"></audio>
+    
+    <!-- Loader -->
+    <!-- <div id="loader" class="loader">
+      <div class="spinner"></div>
+    </div> -->
+
+    <!-- Fondo tipo red tecnológica -->
+    <div class="network-bg"></div>
+
+    <!-- Contenido principal -->
+    <main class="container mx-auto p-6 fade-in">
+      
+      <!-- Encabezado con logo -->
+      <header class="flex justify-center items-center mb-8">
+        <img
+          id="logo"
+          src="./img/logo-feria.png"
+          alt="Logo Feria Talento Emprendedor"
+          class="w-64 md:w-72 logo-glow"
+        />
+      </header>
+
+      <!-- Contenedor de categorías -->
+      <div
+        id="categories"
+        class="space-y-10 glass-container mt-6 overflow-hidden text-center"
+      >
+        <!-- El contenido se genera dinámicamente -->
+      </div>
+
+      <!-- Botón de enviar -->
+      <div class="w-full flex justify-center mt-10">
+        <button
+          id="confirm-votes"
+          class="btn shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+          disabled
+        >
+          Enviar Votos
+        </button>
+      </div>
+
+      <!-- Botón oculto para administración -->
+      <!-- <div class="admin-access fixed bottom-6 left-6"> -->
+        <!-- <a
+          id="results-button"
+          href="./admin.html"
+          class="admin-button block w-12 h-12 rounded-full shadow-lg transition-transform transform hover:scale-110"
+        >
+          <img src="./img/icons8-ojo-48w.png" alt="Resultados" class="w-full h-full rounded-full" />
+        </a> -->
+      <!-- </div> -->
+
+      <!-- Botón oculto de administración -->
+<div id="admin-container"
+     class="fixed bottom-6 left-6 group z-[9999] w-16 h-16 flex items-center justify-center">
+  <button
+    id="admin-btn"
+    class="opacity-0 group-hover:opacity-100 w-12 h-12 rounded-full bg-blue-600 bg-opacity-70 text-white shadow-lg backdrop-blur-md border border-blue-400 transition-all duration-300 hover:bg-blue-700 flex items-center justify-center"
+    title="Administración"
+  >
+    <!-- 🏆 Ícono de trofeo -->
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+      stroke-width="2" stroke="currentColor" class="w-6 h-6">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M8 21h8m-8 0a3 3 0 0 0 8 0m-8 0h8M6 3v3a6 6 0 0 0 12 0V3M4 7h2m12 0h2m-2 0a6 6 0 0 1-12 0" />
+    </svg>
+  </button>
+</div>
+
+
+
+     <!-- Botón de pantalla completa (oculto hasta hover) -->
+<div id="fullscreen-container"
+     class="fixed top-6 right-6 group z-[9999] w-16 h-16 flex items-center justify-center">
+  <button
+    id="fullscreen-btn"
+    class="opacity-0 group-hover:opacity-100 w-12 h-12 rounded-full bg-blue-600 bg-opacity-70 text-white shadow-lg backdrop-blur-md border border-blue-400 transition-all duration-300 hover:bg-blue-700 flex items-center justify-center"
+    title="Pantalla completa"
+  >
+    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
+      stroke-width="2" stroke="currentColor" class="w-6 h-6">
+      <path stroke-linecap="round" stroke-linejoin="round"
+        d="M8 3H5a2 2 0 00-2 2v3m0 8v3a2 2 0 002 2h3m8-16h3a2 2 0 012 2v3m0 8v3a2 2 0 01-2 2h-3" />
+    </svg>
+  </button>
+</div>
+
+
+    </main>
+
+    <!-- Modal para ingresar código de votación -->
+    <div
+      id="code-modal"
+      class="fixed inset-0 bg-gray-900 bg-opacity-80 hidden justify-center items-center z-[10000] p-4"
+    >
+      <div class="glass-container text-center max-w-md w-full mx-auto">
+        <h3 class="text-2xl font-bold mb-2 text-white">Código de votación</h3>
+        <p class="text-gray-300 mb-5">Ingresa el código que te fue proporcionado para confirmar tu voto.</p>
+
+        <input
+          id="voter-code"
+          type="text"
+          maxlength="20"
+          autocomplete="off"
+          autocapitalize="characters"
+          placeholder="Ej. A7K9P2"
+          class="w-full rounded-lg bg-gray-800 border border-gray-600 text-white text-center text-xl tracking-widest px-4 py-3 uppercase focus:outline-none focus:border-blue-400"
+        />
+
+        <p id="code-error" class="hidden text-red-400 text-sm mt-3"></p>
+
+        <div class="flex justify-center gap-3 mt-6">
+          <button
+            id="cancel-code"
+            type="button"
+            class="px-5 py-2 rounded-lg bg-gray-700 text-white hover:bg-gray-600 transition"
+          >
+            Cancelar
+          </button>
+          <button
+            id="submit-code"
+            type="button"
+            class="btn px-6 py-2 shadow-lg"
+          >
+            Confirmar voto
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de éxito -->
+    <div
+      id="success-modal"
+      class="fixed inset-0 bg-gray-900 bg-opacity-60 flex justify-center items-center hidden"
+    >
+      <div class="glass-container text-center max-w-md mx-auto transform scale-95 transition-all">
+        <h3 class="text-2xl font-bold mb-4 text-white">
+          ¡Gracias por tu voto!
+        </h3>
+        <img
+          src="./img/imagenocelote.png"
+          alt="Imagen de éxito"
+          class="w-full rounded-lg shadow-md mb-4"
+        />
+      </div>
+    </div>
+    
+    <!-- Script para ocultar loader -->
+    <!-- <script>
+      window.addEventListener('load', () => {
+        document.getElementById('loader').style.display = 'none';
+      });
+    </script> -->
+
+
+
+  </body>
+</html>
