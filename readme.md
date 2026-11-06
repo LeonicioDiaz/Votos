@@ -17,4 +17,4 @@ Pass: 7777777
 Están ubicados en la carpeta img, para cambiarlos solo usa la imagen sin fondo y utiliza el mismo nombre
 
 ###Error con Firebase no resuelto aun
-Procurar no tener la sesion de admin abierta mientras se este llevando a cabo la votación ya que no reconocera los códigos
+Procurar no tener la sesion de admin abierta mientras se este llevando a cabo la votación ya que no reconocera los códigos esto si se usa un mismo navegador
