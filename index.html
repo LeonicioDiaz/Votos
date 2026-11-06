@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
@@ -11,13 +11,41 @@
     <script type="module" src="app.js"></script>
     <!-- Estilos nuevos -->
     <link rel="stylesheet" href="styles.css" />
+    <style>
+      /* Colores alternos para distinguir las tarjetas de categoría generadas por app.js. */
+      #categories > :nth-child(6n + 1) {
+        background-color: rgba(37, 99, 235, 0.22) !important;
+        border-color: rgba(96, 165, 250, 0.65);
+      }
+      #categories > :nth-child(6n + 2) {
+        background-color: rgba(5, 150, 105, 0.22) !important;
+        border-color: rgba(52, 211, 153, 0.65);
+      }
+      #categories > :nth-child(6n + 3) {
+        background-color: rgba(217, 119, 6, 0.22) !important;
+        border-color: rgba(251, 191, 36, 0.65);
+      }
+      #categories > :nth-child(6n + 4) {
+        background-color: rgba(147, 51, 234, 0.22) !important;
+        border-color: rgba(192, 132, 252, 0.65);
+      }
+      #categories > :nth-child(6n + 5) {
+        background-color: rgba(225, 29, 72, 0.22) !important;
+        border-color: rgba(251, 113, 133, 0.65);
+      }
+      #categories > :nth-child(6n) {
+        background-color: rgba(8, 145, 178, 0.22) !important;
+        border-color: rgba(34, 211, 238, 0.65);
+      }
+    </style>
   </head>
 
-  <body class="text-gray-200 min-h-screen flex flex-col items-center justify-center relative">
-
+  <body
+    class="text-gray-200 min-h-screen flex flex-col items-center justify-center relative"
+  >
     <!-- audio -->
-     <audio id="voteSound" src="sounds/success.mp3" preload="auto"></audio>
-    
+    <audio id="voteSound" src="sounds/success.mp3" preload="auto"></audio>
+
     <!-- Loader -->
     <!-- <div id="loader" class="loader">
       <div class="spinner"></div>
@@ -28,7 +56,6 @@
 
     <!-- Contenido principal -->
     <main class="container mx-auto p-6 fade-in">
-      
       <!-- Encabezado con logo -->
       <header class="flex justify-center items-center mb-8">
         <img
@@ -60,7 +87,7 @@
 
       <!-- Botón oculto para administración -->
       <!-- <div class="admin-access fixed bottom-6 left-6"> -->
-        <!-- <a
+      <!-- <a
           id="results-button"
           href="./admin.html"
           class="admin-button block w-12 h-12 rounded-full shadow-lg transition-transform transform hover:scale-110"
@@ -70,41 +97,59 @@
       <!-- </div> -->
 
       <!-- Botón oculto de administración -->
-<div id="admin-container"
-     class="fixed bottom-6 left-6 group z-[9999] w-16 h-16 flex items-center justify-center">
-  <button
-    id="admin-btn"
-    class="opacity-0 group-hover:opacity-100 w-12 h-12 rounded-full bg-blue-600 bg-opacity-70 text-white shadow-lg backdrop-blur-md border border-blue-400 transition-all duration-300 hover:bg-blue-700 flex items-center justify-center"
-    title="Administración"
-  >
-    <!-- 🏆 Ícono de trofeo -->
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-      stroke-width="2" stroke="currentColor" class="w-6 h-6">
-      <path stroke-linecap="round" stroke-linejoin="round"
-        d="M8 21h8m-8 0a3 3 0 0 0 8 0m-8 0h8M6 3v3a6 6 0 0 0 12 0V3M4 7h2m12 0h2m-2 0a6 6 0 0 1-12 0" />
-    </svg>
-  </button>
-</div>
+      <div
+        id="admin-container"
+        class="fixed bottom-6 left-6 group z-[9999] w-16 h-16 flex items-center justify-center"
+      >
+        <button
+          id="admin-btn"
+          class="opacity-0 group-hover:opacity-100 w-12 h-12 rounded-full bg-blue-600 bg-opacity-70 text-white shadow-lg backdrop-blur-md border border-blue-400 transition-all duration-300 hover:bg-blue-700 flex items-center justify-center"
+          title="Administración"
+        >
+          <!-- 🏆 Ícono de trofeo -->
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="w-6 h-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M8 21h8m-8 0a3 3 0 0 0 8 0m-8 0h8M6 3v3a6 6 0 0 0 12 0V3M4 7h2m12 0h2m-2 0a6 6 0 0 1-12 0"
+            />
+          </svg>
+        </button>
+      </div>
 
-
-
-     <!-- Botón de pantalla completa (oculto hasta hover) -->
-<div id="fullscreen-container"
-     class="fixed top-6 right-6 group z-[9999] w-16 h-16 flex items-center justify-center">
-  <button
-    id="fullscreen-btn"
-    class="opacity-0 group-hover:opacity-100 w-12 h-12 rounded-full bg-blue-600 bg-opacity-70 text-white shadow-lg backdrop-blur-md border border-blue-400 transition-all duration-300 hover:bg-blue-700 flex items-center justify-center"
-    title="Pantalla completa"
-  >
-    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"
-      stroke-width="2" stroke="currentColor" class="w-6 h-6">
-      <path stroke-linecap="round" stroke-linejoin="round"
-        d="M8 3H5a2 2 0 00-2 2v3m0 8v3a2 2 0 002 2h3m8-16h3a2 2 0 012 2v3m0 8v3a2 2 0 01-2 2h-3" />
-    </svg>
-  </button>
-</div>
-
-
+      <!-- Botón de pantalla completa (oculto hasta hover) -->
+      <div
+        id="fullscreen-container"
+        class="fixed top-6 right-6 group z-[9999] w-16 h-16 flex items-center justify-center"
+      >
+        <button
+          id="fullscreen-btn"
+          class="opacity-0 group-hover:opacity-100 w-12 h-12 rounded-full bg-blue-600 bg-opacity-70 text-white shadow-lg backdrop-blur-md border border-blue-400 transition-all duration-300 hover:bg-blue-700 flex items-center justify-center"
+          title="Pantalla completa"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="w-6 h-6"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M8 3H5a2 2 0 00-2 2v3m0 8v3a2 2 0 002 2h3m8-16h3a2 2 0 012 2v3m0 8v3a2 2 0 01-2 2h-3"
+            />
+          </svg>
+        </button>
+      </div>
     </main>
 
     <!-- Modal para ingresar código de votación -->
@@ -114,7 +159,9 @@
     >
       <div class="glass-container text-center max-w-md w-full mx-auto">
         <h3 class="text-2xl font-bold mb-2 text-white">Código de votación</h3>
-        <p class="text-gray-300 mb-5">Ingresa el código que te fue proporcionado para confirmar tu voto.</p>
+        <p class="text-gray-300 mb-5">
+          Ingresa el código que te fue proporcionado para confirmar tu voto.
+        </p>
 
         <input
           id="voter-code"
@@ -152,7 +199,9 @@
       id="success-modal"
       class="fixed inset-0 bg-gray-900 bg-opacity-60 flex justify-center items-center hidden"
     >
-      <div class="glass-container text-center max-w-md mx-auto transform scale-95 transition-all">
+      <div
+        class="glass-container text-center max-w-md mx-auto transform scale-95 transition-all"
+      >
         <h3 class="text-2xl font-bold mb-4 text-white">
           ¡Gracias por tu voto!
         </h3>
@@ -163,15 +212,12 @@
         />
       </div>
     </div>
-    
+
     <!-- Script para ocultar loader -->
     <!-- <script>
       window.addEventListener('load', () => {
         document.getElementById('loader').style.display = 'none';
       });
     </script> -->
-
-
-
   </body>
 </html>
