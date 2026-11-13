@@ -9,10 +9,6 @@ Los participantes no necesitan cuenta Firebase. Introducen un código único gen
 ###Eliminar códigos viejos
 Si quieres eliminar los códigos viejos para generar nuevos, hazlo desde firebase entrando a Firestore -> Datos y borra la tabla votantes
 
-###Admin
-Usuario: leoniciodg@gmail.com
-Pass: 7777777
-
 ###Logos
 Están ubicados en la carpeta img, para cambiarlos solo usa la imagen sin fondo y utiliza el mismo nombre
 
