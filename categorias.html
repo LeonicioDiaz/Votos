@@ -10,7 +10,7 @@
     import {
       auth, onAuthStateChanged, signOut, isAdmin,
       getCategoriesWithProjects, createCategory, deleteCategory,
-      createProject, deleteProject, slugifyImageName, escapeHtml
+      createProject, deleteProject, updateProjectImage, slugifyImageName, escapeHtml
     } from './firebase.js';
 
     const categoriesList = document.getElementById('categories-list');
@@ -52,16 +52,33 @@
               </div>
             </div>
             <div id="projects-${cat.id}" class="hidden mt-3 pl-3 border-l border-gray-600">
-              <div class="flex flex-wrap gap-3 mb-3">
-                <input id="proj-title-${cat.id}" type="text" placeholder="Título del proyecto" class="p-2 rounded bg-gray-900 border border-gray-700 flex-1" />
+              <div class="flex flex-wrap gap-3 mb-2 items-center">
+                <input id="proj-title-${cat.id}" type="text" placeholder="Título del proyecto" class="p-2 rounded bg-gray-900 border border-gray-700 flex-1 min-w-[200px]" />
+                <label class="btn bg-gray-700 px-3 py-1 cursor-pointer">
+                  Elegir imagen
+                  <input id="proj-file-${cat.id}" type="file" accept="image/*" class="hidden" />
+                </label>
+                <img id="proj-preview-${cat.id}" alt="Vista previa" class="hidden h-12 w-12 object-cover rounded border border-gray-600" />
                 <button class="btn bg-green-600 px-3 py-1" data-add-project="${cat.id}">Agregar Proyecto</button>
               </div>
-              <p class="text-xs text-gray-400 mb-3">Imagen esperada: <span id="preview-name-${cat.id}">nombre_del_proyecto.png</span></p>
+              <p class="text-xs text-gray-400 mb-3">
+                <span id="file-name-${cat.id}">Sin imagen seleccionada.</span>
+                Si no eliges imagen se usará <span id="preview-name-${cat.id}">nombre_del_proyecto.png</span> de la carpeta img/.
+              </p>
               <ul id="proj-list-${cat.id}" class="space-y-2">
                 ${cat.projects.map((p) => `
                   <li class="flex flex-wrap justify-between gap-3 bg-gray-900 bg-opacity-60 p-2 rounded items-center">
-                    <span>${escapeHtml(p.title)} <span class="text-xs text-gray-400">(${escapeHtml(p.id)})</span><br><span class="text-xs text-blue-300">${escapeHtml(p.image)}</span></span>
-                    <button class="text-red-400 hover:text-red-600" data-delete-project="${p.id}">Eliminar</button>
+                    <div class="flex items-center gap-3">
+                      <img src="${escapeHtml(p.image)}" alt="" class="h-12 w-12 object-cover rounded border border-gray-700" onerror="this.src='./img/logo-feria.png'" />
+                      <span>${escapeHtml(p.title)} <span class="text-xs text-gray-400">(${escapeHtml(p.id)})</span><br><span class="text-xs text-blue-300">${p.image && p.image.startsWith('data:') ? 'Imagen subida desde el panel' : escapeHtml(p.image)}</span></span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                      <label class="text-blue-300 hover:text-blue-200 cursor-pointer text-sm">
+                        Cambiar imagen
+                        <input type="file" accept="image/*" class="hidden" data-change-image="${p.id}" />
+                      </label>
+                      <button class="text-red-400 hover:text-red-600" data-delete-project="${p.id}">Eliminar</button>
+                    </div>
                   </li>`).join('')}
               </ul>
             </div>`;
@@ -82,13 +99,46 @@
           btn.addEventListener('click', async () => {
             const id = btn.dataset.addProject;
             const input = document.getElementById(`proj-title-${id}`);
+            const fileInput = document.getElementById(`proj-file-${id}`);
             const title = input.value.trim();
             if (!title) return alert('Ingresa un título para el proyecto.');
+            const file = fileInput.files[0] || null;
+            btn.disabled = true;
             try {
-              const result = await createProject(id, title);
+              const result = await createProject(id, title, file);
               input.value = '';
-              alert(`Proyecto agregado. La imagen que debe existir es: ${result.image}`);
+              if (!file) alert(`Proyecto agregado sin imagen subida. Debe existir el archivo: ${result.image}`);
               await renderCategories();
+              document.getElementById(`projects-${id}`)?.classList.remove('hidden');
+            } catch (e) { alert(e.message); }
+            finally { btn.disabled = false; }
+          });
+        });
+        categoriesList.querySelectorAll('input[id^="proj-file-"]').forEach((fileInput) => {
+          fileInput.addEventListener('change', () => {
+            const id = fileInput.id.replace('proj-file-', '');
+            const preview = document.getElementById(`proj-preview-${id}`);
+            const label = document.getElementById(`file-name-${id}`);
+            const file = fileInput.files[0];
+            if (!file) {
+              preview.classList.add('hidden');
+              label.textContent = 'Sin imagen seleccionada.';
+              return;
+            }
+            preview.src = URL.createObjectURL(file);
+            preview.classList.remove('hidden');
+            label.textContent = `Imagen: ${file.name}.`;
+          });
+        });
+        categoriesList.querySelectorAll('[data-change-image]').forEach((fileInput) => {
+          fileInput.addEventListener('change', async () => {
+            const file = fileInput.files[0];
+            if (!file) return;
+            const catId = fileInput.closest('[id^="projects-"]').id.replace('projects-', '');
+            try {
+              await updateProjectImage(fileInput.dataset.changeImage, file);
+              await renderCategories();
+              document.getElementById(`projects-${catId}`)?.classList.remove('hidden');
             } catch (e) { alert(e.message); }
           });
         });

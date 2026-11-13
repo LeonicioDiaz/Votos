@@ -221,8 +221,54 @@ export async function deleteCategory(categoryId) {
   await batch.commit();
 }
 
-export async function createProject(categoryId, title) {
-  const image = `./img/${slugifyImageName(title)}`;
+/*
+ * Convierte una imagen elegida por el administrador en un data URL comprimido.
+ * Se redimensiona (lado mayor = maxSize) para que quepa de sobra en un documento
+ * de Firestore (límite 1 MiB) y cargue rápido en la boleta.
+ */
+export async function fileToCompressedDataUrl(file, maxSize = 800, quality = 0.82) {
+  if (!file || !file.type.startsWith("image/")) {
+    throw new Error("El archivo seleccionado no es una imagen.");
+  }
+
+  const img = await new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const el = new Image();
+    el.onload = () => { URL.revokeObjectURL(url); resolve(el); };
+    el.onerror = () => { URL.revokeObjectURL(url); reject(new Error("No se pudo leer la imagen.")); };
+    el.src = url;
+  });
+
+  const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.round(img.width * scale);
+  canvas.height = Math.round(img.height * scale);
+  const ctx = canvas.getContext("2d");
+  ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+  // WebP conserva transparencia y pesa poco. Si el navegador no lo soporta,
+  // cae a JPEG con fondo blanco.
+  let dataUrl = canvas.toDataURL("image/webp", quality);
+  if (!dataUrl.startsWith("data:image/webp")) {
+    ctx.globalCompositeOperation = "destination-over";
+    ctx.fillStyle = "#ffffff";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    dataUrl = canvas.toDataURL("image/jpeg", quality);
+  }
+
+  if (dataUrl.length > 900000) {
+    throw new Error("La imagen es demasiado pesada incluso después de comprimirla. Usa una más pequeña.");
+  }
+  return dataUrl;
+}
+
+export async function createProject(categoryId, title, imageFile = null) {
+  // Con archivo: la imagen se guarda en Firestore. Sin archivo: se conserva
+  // el comportamiento anterior (./img/nombre_del_proyecto.png).
+  const image = imageFile
+    ? await fileToCompressedDataUrl(imageFile)
+    : `./img/${slugifyImageName(title)}`;
+
   const projectSnapshot = await getDocs(
     query(collection(db, "proyectos"), where("categoryId", "==", categoryId))
   );
@@ -245,6 +291,12 @@ export async function createProject(categoryId, title) {
   });
 
   return { id: ref.id, image };
+}
+
+export async function updateProjectImage(projectId, imageFile) {
+  const image = await fileToCompressedDataUrl(imageFile);
+  await updateDoc(doc(db, "proyectos", projectId), { image });
+  return image;
 }
 
 export async function deleteProject(projectId) {
