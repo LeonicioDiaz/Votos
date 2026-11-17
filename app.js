@@ -91,13 +91,51 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
+  // function handleVoteSelection(card, categoryId, projectId) {
+  //   const categoryCards = document.querySelectorAll(`[data-category-id="${CSS.escape(categoryId)}"]`);
+  //   categoryCards.forEach((c) => c.classList.remove("selected"));
+  //   card.classList.add("selected");
+  //   selectedVotes[categoryId] = projectId;
+
+  //   confirmBtn.disabled = Object.keys(selectedVotes).length !== categories.length;
+  // }
+
+  // confirmBtn.addEventListener("click", () => {
+  //   if (Object.keys(selectedVotes).length !== categories.length) {
+  //     alert("Selecciona un proyecto en todas las categorías antes de enviar.");
+  //     return;
+  //   }
+  //   openCodeModal();
+  // });
+
+  // // El modal de código debe existir en index.html. Se protegen los listeners
+  // // para evitar que un elemento faltante detenga toda la aplicación.
+  // if (submitCodeBtn && codeInput && codeModal && codeError) {
+  //   submitCodeBtn.addEventListener("click", confirmVotes);
+  //   codeInput.addEventListener("keydown", (event) => {
+  //     if (event.key === "Enter") confirmVotes();
+  //   });
+  // }
+
+  // if (cancelCodeBtn) cancelCodeBtn.addEventListener("click", closeCodeModal);
+
   function handleVoteSelection(card, categoryId, projectId) {
     const categoryCards = document.querySelectorAll(`[data-category-id="${CSS.escape(categoryId)}"]`);
     categoryCards.forEach((c) => c.classList.remove("selected"));
     card.classList.add("selected");
     selectedVotes[categoryId] = projectId;
 
-    confirmBtn.disabled = Object.keys(selectedVotes).length !== categories.length;
+    // Verificar si se han seleccionado proyectos en TODAS las categorías
+    const allSelected = Object.keys(selectedVotes).length === categories.length;
+
+    if (confirmBtn) {
+      confirmBtn.disabled = !allSelected;
+    }
+
+    // Si ya completó todas las categorías, abrir automáticamente el modal de código
+    if (allSelected) {
+      openCodeModal();
+    }
   }
 
   confirmBtn.addEventListener("click", () => {
@@ -109,7 +147,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   // El modal de código debe existir en index.html. Se protegen los listeners
-  // para evitar que un elemento faltante detenga toda la aplicación.
   if (submitCodeBtn && codeInput && codeModal && codeError) {
     submitCodeBtn.addEventListener("click", confirmVotes);
     codeInput.addEventListener("keydown", (event) => {
@@ -117,7 +154,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
   }
 
-  if (cancelCodeBtn) cancelCodeBtn.addEventListener("click", closeCodeModal);
+  if (cancelCodeBtn) {
+    cancelCodeBtn.addEventListener("click", () => {
+      closeCodeModal();
+      // Si el usuario cancela pero mantiene todas las selecciones hechas, 
+      // y vuelve a hacer clic en cualquier tarjeta (o cambia alguna), 
+      // al seleccionarse de nuevo se volverá a abrir por la lógica de handleVoteSelection.
+      // O si deseas que al cancelar se pueda reabrir de inmediato si vuelve a tocar cualquier opción, 
+      // esto ya queda cubierto ya que al tocar cualquier proyecto se ejecuta handleVoteSelection.
+    });
+  }
+
+  ////////////////////////
 
   async function confirmVotes() {
     if (isSubmitting) return;
